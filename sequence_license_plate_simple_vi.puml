@@ -1,0 +1,35 @@
+@startuml Nhận Dạng Biển Số (Đơn giản)
+
+actor "Người dùng" as User
+participant "Trình duyệt" as Browser
+participant "Flask" as Flask
+participant "YOLO" as YOLO
+participant "OCR" as OCR
+
+User -> Browser: Tải ảnh
+Browser -> Flask: POST /api/detect-plate
+
+Flask -> Flask: Kiểm tra file
+Flask -> YOLO: Phát hiện biển số
+
+alt YOLO thành công
+    YOLO --> Flask: ROI
+else YOLO thất bại
+    Flask -> Flask: Dùng OpenCV
+end
+
+Flask -> Flask: Tiền xử lý (20 biến thể)
+
+loop Mỗi biến thể
+    Flask -> OCR: Nhận dạng
+    OCR --> Flask: Text + confidence
+end
+
+Flask -> Flask: Bỏ phiếu kết quả tốt nhất
+Flask -> Flask: Kiểm tra hợp lệ
+Flask -> Flask: Định dạng
+
+Flask --> Browser: JSON (biển số + độ tin cậy)
+Browser --> User: Hiển thị kết quả
+
+@enduml

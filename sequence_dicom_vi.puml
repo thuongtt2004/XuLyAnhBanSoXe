@@ -1,0 +1,161 @@
+@startuml Sơ Đồ Tuần Tự Xử Lý DICOM
+
+actor "Người dùng" as User
+participant "Trình duyệt" as Browser
+participant "Flask\nỨng dụng Web" as Flask
+participant "Bộ xử lý\nDICOM" as DICOM
+participant "Thư viện\npydicom" as pydicom
+participant "Tiện ích" as Utils
+
+User -> Browser: Tải file DICOM (.dcm)
+activate Browser
+
+Browser -> Flask: POST /api/process-dicom
+activate Flask
+
+Flask -> Flask: Kiểm tra phần mở rộng file
+note right: Kiểm tra phần mở rộng .dcm
+
+Flask -> Flask: Lưu vào uploads/
+note right: Lưu trữ tạm thời
+
+Flask -> DICOM: process_dicom(filepath)
+activate DICOM
+
+DICOM -> pydicom: dcmread(filepath)
+activate pydicom
+
+pydicom -> pydicom: Phân tích header DICOM
+pydicom -> pydicom: Đọc dữ liệu pixel
+pydicom --> DICOM: Đối tượng dataset DICOM
+
+deactivate pydicom
+
+DICOM -> DICOM: extract_metadata(dicom_file)
+note right
+  Siêu dữ liệu:
+  - Tên bệnh nhân
+  - ID bệnh nhân
+  - Ngày nghiên cứu
+  - Phương thức (CT, MRI, X-Ray)
+  - Kích thước ảnh
+  - Trung tâm/Độ rộng cửa sổ
+end note
+
+DICOM -> DICOM: Trích xuất mảng pixel
+note right: Lấy dữ liệu pixel thô\n(16-bit hoặc 12-bit)
+
+DICOM -> DICOM: apply_windowing(pixel_array)
+note right
+  Windowing mặc định:
+  - CT: Center=40, Width=400
+  - MRI: Tự động tính toán
+  - X-Ray: Tự động tính toán
+  
+  Công thức:
+  output = (pixel - center + width/2) / width * 255
+  Giới hạn 0-255
+end note
+
+DICOM -> DICOM: Chuẩn hóa về khoảng 0-255
+DICOM -> DICOM: Chuyển đổi sang grayscale 8-bit
+
+DICOM -> Utils: encode_image_to_base64(image)
+activate Utils
+
+Utils -> Utils: Chuyển mảng numpy sang PIL Image
+Utils -> Utils: Mã hóa thành JPEG
+Utils -> Utils: Mã hóa Base64
+
+Utils --> DICOM: Chuỗi base64
+
+deactivate Utils
+
+DICOM --> Flask: Dict kết quả
+note right
+  {
+    "success": true,
+    "image": "base64...",
+    "metadata": {
+      "patient_name": "...",
+      "study_date": "...",
+      "modality": "CT",
+      ...
+    },
+    "window_center": 40,
+    "window_width": 400
+  }
+end note
+
+deactivate DICOM
+
+Flask -> Flask: Dọn dẹp file tạm
+note right: Xóa file đã tải lên
+
+Flask --> Browser: Phản hồi JSON
+
+deactivate Flask
+
+Browser -> Browser: Hiển thị ảnh DICOM
+Browser -> Browser: Hiển thị siêu dữ liệu
+Browser --> User: Hiển thị ảnh + thông tin
+
+== Người dùng điều chỉnh Cửa sổ/Mức ==
+
+User -> Browser: Điều chỉnh thanh trượt cửa sổ
+activate Browser
+
+Browser -> Flask: POST /api/adjust-window
+activate Flask
+note right
+  Yêu cầu:
+  {
+    "image_data": "base64...",
+    "window_center": 100,
+    "window_width": 500
+  }
+end note
+
+Flask -> DICOM: adjust_window(image_data, center, width)
+activate DICOM
+
+DICOM -> DICOM: Giải mã base64 thành ảnh
+DICOM -> DICOM: Áp dụng windowing mới
+note right
+  Tính toán lại với giá trị mới:
+  output = (pixel - center + width/2) / width * 255
+end note
+
+DICOM -> DICOM: Chuẩn hóa về 0-255
+DICOM -> DICOM: Chuyển đổi sang 8-bit
+
+DICOM -> Utils: encode_image_to_base64(image)
+activate Utils
+
+Utils -> Utils: Mã hóa thành base64
+Utils --> DICOM: Chuỗi base64
+
+deactivate Utils
+
+DICOM --> Flask: Dict kết quả
+note right
+  {
+    "success": true,
+    "image": "base64...",
+    "window_center": 100,
+    "window_width": 500
+  }
+end note
+
+deactivate DICOM
+
+Flask --> Browser: Phản hồi JSON
+
+deactivate Flask
+
+Browser -> Browser: Cập nhật hiển thị ảnh
+Browser --> User: Hiển thị ảnh đã cập nhật
+
+deactivate Browser
+
+@enduml

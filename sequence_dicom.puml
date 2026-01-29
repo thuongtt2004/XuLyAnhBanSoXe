@@ -1,0 +1,161 @@
+@startuml DICOM Processing Sequence
+
+actor User
+participant Browser
+participant "Flask\nWeb App" as Flask
+participant "DICOM\nProcessor" as DICOM
+participant "pydicom\nLibrary" as pydicom
+participant "Utils" as Utils
+
+User -> Browser: Upload DICOM file (.dcm)
+activate Browser
+
+Browser -> Flask: POST /api/process-dicom
+activate Flask
+
+Flask -> Flask: Validate file extension
+note right: Check .dcm extension
+
+Flask -> Flask: Save to uploads/
+note right: Temporary storage
+
+Flask -> DICOM: process_dicom(filepath)
+activate DICOM
+
+DICOM -> pydicom: dcmread(filepath)
+activate pydicom
+
+pydicom -> pydicom: Parse DICOM header
+pydicom -> pydicom: Read pixel data
+pydicom --> DICOM: DICOM dataset object
+
+deactivate pydicom
+
+DICOM -> DICOM: extract_metadata(dicom_file)
+note right
+  Metadata:
+  - Patient Name
+  - Patient ID
+  - Study Date
+  - Modality (CT, MRI, X-Ray)
+  - Image dimensions
+  - Window Center/Width
+end note
+
+DICOM -> DICOM: Extract pixel array
+note right: Get raw pixel data\n(16-bit or 12-bit)
+
+DICOM -> DICOM: apply_windowing(pixel_array)
+note right
+  Default windowing:
+  - CT: Center=40, Width=400
+  - MRI: Auto calculate
+  - X-Ray: Auto calculate
+  
+  Formula:
+  output = (pixel - center + width/2) / width * 255
+  Clamp to 0-255
+end note
+
+DICOM -> DICOM: Normalize to 0-255 range
+DICOM -> DICOM: Convert to 8-bit grayscale
+
+DICOM -> Utils: encode_image_to_base64(image)
+activate Utils
+
+Utils -> Utils: Convert numpy array to PIL Image
+Utils -> Utils: Encode as JPEG
+Utils -> Utils: Base64 encode
+
+Utils --> DICOM: base64 string
+
+deactivate Utils
+
+DICOM --> Flask: Result dict
+note right
+  {
+    "success": true,
+    "image": "base64...",
+    "metadata": {
+      "patient_name": "...",
+      "study_date": "...",
+      "modality": "CT",
+      ...
+    },
+    "window_center": 40,
+    "window_width": 400
+  }
+end note
+
+deactivate DICOM
+
+Flask -> Flask: Cleanup temp files
+note right: Delete uploaded file
+
+Flask --> Browser: JSON response
+
+deactivate Flask
+
+Browser -> Browser: Display DICOM image
+Browser -> Browser: Display metadata
+Browser --> User: Show image + info
+
+== User Adjusts Window/Level ==
+
+User -> Browser: Adjust window slider
+activate Browser
+
+Browser -> Flask: POST /api/adjust-window
+activate Flask
+note right
+  Request:
+  {
+    "image_data": "base64...",
+    "window_center": 100,
+    "window_width": 500
+  }
+end note
+
+Flask -> DICOM: adjust_window(image_data, center, width)
+activate DICOM
+
+DICOM -> DICOM: Decode base64 to image
+DICOM -> DICOM: Apply new windowing
+note right
+  Recalculate with new values:
+  output = (pixel - center + width/2) / width * 255
+end note
+
+DICOM -> DICOM: Normalize to 0-255
+DICOM -> DICOM: Convert to 8-bit
+
+DICOM -> Utils: encode_image_to_base64(image)
+activate Utils
+
+Utils -> Utils: Encode to base64
+Utils --> DICOM: base64 string
+
+deactivate Utils
+
+DICOM --> Flask: Result dict
+note right
+  {
+    "success": true,
+    "image": "base64...",
+    "window_center": 100,
+    "window_width": 500
+  }
+end note
+
+deactivate DICOM
+
+Flask --> Browser: JSON response
+
+deactivate Flask
+
+Browser -> Browser: Update image display
+Browser --> User: Show updated image
+
+deactivate Browser
+
+@enduml

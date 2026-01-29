@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xử Lý Ảnh DICOM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; position: relative; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-btn { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: white; text-decoration: none; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 50px; transition: all 0.3s; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .content { padding: 60px 40px; }
+        .info-box { background: #e8f4f8; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 30px; border-radius: 5px; }
+        .info-box h3 { color: #667eea; margin-bottom: 10px; }
+        .info-box ul { margin-left: 20px; }
+        .info-box li { margin: 5px 0; color: #666; }
+        .upload-section { text-align: center; padding: 40px; background: #f8f9fa; border-radius: 15px; margin-bottom: 30px; }
+        .upload-section h2 { margin-bottom: 20px; color: #333; }
+        input[type="file"] { display: block; margin: 20px auto; padding: 15px; border: 2px dashed #667eea; border-radius: 10px; background: white; cursor: pointer; }
+        .btn-primary { padding: 15px 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+        .result-section { padding: 40px; background: #f8f9fa; border-radius: 15px; }
+        .result-section h2 { margin-bottom: 20px; color: #333; }
+        #dicomContent { background: white; padding: 30px; border-radius: 10px; margin-top: 20px; }
+        .result-image { max-width: 100%; border-radius: 10px; margin: 20px 0; }
+        .result-info { padding: 20px; background: #e8f4f8; border-left: 4px solid #667eea; margin: 20px 0; }
+        .result-info h3 { color: #667eea; margin-bottom: 10px; }
+        .result-info p { margin: 5px 0; color: #666; }
+        .windowing-controls { margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; }
+        .windowing-controls label { display: block; margin: 15px 0; color: #333; font-weight: bold; }
+        .windowing-controls input[type="range"] { width: 100%; }
+        .loading { text-align: center; padding: 40px; }
+        .loading::after { content: '⏳ Đang xử lý...'; font-size: 1.2em; color: #667eea; }
+        .error { background: #fee; border-left: 4px solid #f44; padding: 20px; border-radius: 5px; color: #c33; }
+        .success { background: #efe; border-left: 4px solid #4c4; padding: 20px; border-radius: 5px; color: #363; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Xử Lý Ảnh DICOM</h1>
+            <a href="/" class="back-btn">← Trang chủ</a>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <h3>📌 Hướng Dẫn Sử Dụng</h3>
+                <ul>
+                    <li><strong>File DICOM demo:</strong> Sử dụng file <code>dicom_samples/demo.dcm</code> đã được tạo sẵn</li>
+                    <li><strong>Download mẫu:</strong> Chạy <code>py download_dicom_samples.py</code></li>
+                    <li><strong>Windowing:</strong> Điều chỉnh độ sáng/tương phản sau khi upload</li>
+                    <li><strong>Định dạng:</strong> Chỉ chấp nhận file .dcm (DICOM format)</li>
+                </ul>
+            </div>
+            
+            <div class="upload-section">
+                <h2>Tải ảnh DICOM</h2>
+                <input type="file" id="dicomInput" accept=".dcm">
+                <button onclick="processDicom()" class="btn-primary">Xử lý</button>
+            </div>
+            
+            <div id="dicomResult" class="result-section" style="display:none;">
+                <h2>Kết quả</h2>
+                <div id="dicomContent"></div>
+                <div class="windowing-controls">
+                    <label>Window Center: <span id="centerValue">40</span>
+                        <input type="range" id="windowCenter" min="-1000" max="1000" value="40">
+                    </label>
+                    <label>Window Width: <span id="widthValue">400</span>
+                        <input type="range" id="windowWidth" min="1" max="2000" value="400">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentImageData = null;
+        
+        async function processDicom() {
+            const fileInput = document.getElementById('dicomInput');
+            const resultDiv = document.getElementById('dicomResult');
+            const resultContent = document.getElementById('dicomContent');
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Vui lòng chọn file DICOM (.dcm)!');
+                return;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultContent.innerHTML = '<div class="loading"></div>';
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/api/process-dicom', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentImageData = data.image;
+                    
+                    const centerSlider = document.getElementById('windowCenter');
+                    const widthSlider = document.getElementById('windowWidth');
+                    
+                    centerSlider.value = data.window_center;
+                    widthSlider.value = data.window_width;
+                    centerSlider.min = data.min_value;
+                    centerSlider.max = data.max_value;
+                    
+                    resultContent.innerHTML = '<div class="success">' +
+                        '<h3>✅ Xử lý thành công!</h3>' +
+                        '</div>' +
+                        '<img src="' + data.image + '" class="result-image" id="dicomImage" alt="DICOM">' +
+                        '<div class="result-info">' +
+                        '<h3>📊 Thông tin DICOM</h3>' +
+                        '<p><strong>Bệnh nhân:</strong> ' + data.metadata.patient_name + '</p>' +
+                        '<p><strong>ID:</strong> ' + data.metadata.patient_id + '</p>' +
+                        '<p><strong>Ngày:</strong> ' + data.metadata.study_date + '</p>' +
+                        '<p><strong>Loại:</strong> ' + data.metadata.modality + '</p>' +
+                        '<p><strong>Kích thước:</strong> ' + data.metadata.columns + ' x ' + data.metadata.rows + '</p>' +
+                        '</div>';
+                    
+                    centerSlider.oninput = adjustWindow;
+                    widthSlider.oninput = adjustWindow;
+                } else {
+                    resultContent.innerHTML = '<div class="error">' +
+                        '<h3>❌ Lỗi xử lý DICOM</h3>' +
+                        '<p>' + data.error + '</p>' +
+                        '<p><strong>Gợi ý:</strong> Sử dụng file demo.dcm trong folder dicom_samples/</p>' +
+                        '</div>';
+                }
+            } catch (error) {
+                resultContent.innerHTML = '<div class="error">' +
+                    '<h3>❌ Lỗi</h3>' +
+                    '<p>' + error.message + '</p>' +
+                    '</div>';
+            }
+        }
+        
+        async function adjustWindow() {
+            const centerSlider = document.getElementById('windowCenter');
+            const widthSlider = document.getElementById('windowWidth');
+            const centerValue = document.getElementById('centerValue');
+            const widthValue = document.getElementById('widthValue');
+            const dicomImage = document.getElementById('dicomImage');
+            
+            const center = parseFloat(centerSlider.value);
+            const width = parseFloat(widthSlider.value);
+            
+            centerValue.textContent = center.toFixed(0);
+            widthValue.textContent = width.toFixed(0);
+            
+            try {
+                const response = await fetch('/api/adjust-window', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_data: currentImageData,
+                        window_center: center,
+                        window_width: width
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    dicomImage.src = data.image;
+                }
+            } catch (error) {
+                console.error('Error adjusting window:', error);
+            }
+        }
+    </script>
+</body>
+</html>

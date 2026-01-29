@@ -1,0 +1,154 @@
+@startuml Kiến Trúc Hệ Thống
+
+!define RECTANGLE class
+
+skinparam packageStyle rectangle
+skinparam component {
+    BackgroundColor<<presentation>> LightBlue
+    BackgroundColor<<application>> LightGreen
+    BackgroundColor<<business>> LightYellow
+    BackgroundColor<<core>> LightCoral
+    BorderColor Black
+    ArrowColor Black
+}
+
+package "TẦNG GIAO DIỆN (Client)" <<presentation>> {
+    [index.html\nTrang chủ] as index
+    [license_plate.html\nNhận dạng\nBiển số] as license
+    [dicom.html\nTrình xem\nDICOM] as dicom
+    
+    package "Tài nguyên tĩnh" {
+        [style.css\nGiao diện CSS] as css
+        [license_plate.js\nXử lý biển số] as lpjs
+        [dicom.js\nXử lý DICOM] as dcmjs
+    }
+}
+
+package "TẦNG ỨNG DỤNG (Web Server)" <<application>> {
+    package "web_app.py (Ứng dụng Flask)" {
+        [Xử lý route\n@app.route] as routes
+        [Quản lý\ntải file] as upload
+        [API endpoints\n/api/detect-plate\n/api/process-dicom\n/api/adjust-window] as api
+        [Kiểm tra\nyêu cầu] as validation
+        [Định dạng\nphản hồi (JSON)] as response
+    }
+}
+
+package "TẦNG LOGIC NGHIỆP VỤ" <<business>> {
+    package "Nhận dạng biển số" {
+        [Phát hiện YOLO] as yolo
+        [Nhận dạng OCR] as ocr
+        [Tiền xử lý] as preproc
+        [Kiểm tra hợp lệ] as validator
+    }
+    
+    package "Xử lý DICOM" {
+        [pydicom] as pydicom
+        [Điều chỉnh cửa sổ] as windowing
+        [Tăng cường ảnh] as enhancement
+        [Siêu dữ liệu] as metadata
+    }
+}
+
+package "TẦNG MODULE CƠ BẢN" <<core>> {
+    [config.py\nCấu hình\nLớp] as config
+    [utils.py\nHàm\nTiện ích] as utils
+    [OpenCV\nXử lý\nẢnh] as opencv
+    [EasyOCR\nNhận dạng\nVăn bản] as easyocr
+    [NumPy\nThao tác\nMảng] as numpy
+    [Pillow\nXử lý\nẢnh] as pillow
+    [pydicom\nĐọc/Ghi\nDICOM] as pydicom_lib
+    [Flask\nMáy chủ\nWeb] as flask
+}
+
+' Kết nối - Giao diện đến Ứng dụng
+index -down-> routes : HTTP/HTTPS
+license -down-> routes : HTTP/HTTPS
+dicom -down-> routes : HTTP/HTTPS
+
+css -down-> index
+css -down-> license
+css -down-> dicom
+
+lpjs -down-> license
+dcmjs -down-> dicom
+
+' Kết nối - Ứng dụng đến Logic nghiệp vụ
+routes -down-> api
+upload -down-> api
+api -down-> yolo : Biển số
+api -down-> pydicom : DICOM
+validation -up-> routes
+response -up-> routes
+
+' Kết nối - Logic nghiệp vụ nội bộ
+yolo -right-> ocr
+ocr -right-> preproc
+preproc -right-> validator
+
+pydicom -right-> windowing
+windowing -right-> enhancement
+enhancement -right-> metadata
+
+' Kết nối - Logic nghiệp vụ đến Core
+yolo -down-> config
+yolo -down-> opencv
+yolo -down-> utils
+
+ocr -down-> easyocr
+ocr -down-> config
+ocr -down-> utils
+
+preproc -down-> opencv
+preproc -down-> numpy
+preproc -down-> config
+
+validator -down-> utils
+validator -down-> config
+
+pydicom -down-> pydicom_lib
+pydicom -down-> numpy
+pydicom -down-> pillow
+
+windowing -down-> numpy
+enhancement -down-> opencv
+metadata -down-> utils
+
+' Phụ thuộc module cơ bản
+routes -down-> flask
+api -down-> flask
+
+note right of index
+  Giao diện người dùng
+  - Điều hướng
+  - Chọn module
+end note
+
+note right of api
+  Các API Endpoint:
+  - POST /api/detect-plate
+  - POST /api/process-dicom
+  - POST /api/adjust-window
+end note
+
+note right of yolo
+  Quy trình phát hiện:
+  1. Phát hiện YOLO
+  2. Dự phòng OpenCV
+  3. Tiền xử lý (20 biến thể)
+  4. Nhận dạng OCR
+  5. Bỏ phiếu kết quả tốt nhất
+  6. Kiểm tra hợp lệ
+end note
+
+note right of pydicom
+  Quy trình DICOM:
+  1. Đọc file DICOM
+  2. Trích xuất siêu dữ liệu
+  3. Trích xuất dữ liệu pixel
+  4. Áp dụng windowing
+  5. Tăng cường ảnh
+  6. Mã hóa base64
+end note
+
+@enduml

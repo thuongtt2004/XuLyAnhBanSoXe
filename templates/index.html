@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Xử lý Ảnh - License Plate & DICOM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 60px 40px;
+        }
+        
+        .modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .module-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .module-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+        
+        .module-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .module-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+        
+        .module-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .features {
+            margin-top: 50px;
+            padding-top: 50px;
+            border-top: 2px solid #eee;
+        }
+        
+        .features h3 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .feature-item span {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+        
+        .feature-item p {
+            color: #666;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Hệ Thống Xử Lý Ảnh</h1>
+            <p>Nhận dạng Biển số Xe & Xử lý Ảnh Y tế DICOM</p>
+        </div>
+        
+        <div class="content">
+            <div class="modules">
+                <div class="module-card" onclick="location.href='/license-plate'">
+                    <div class="module-icon">🚗</div>
+                    <h2>Nhận Dạng Biển Số</h2>
+                    <p>Hệ thống AI nhận dạng biển số xe tự động với độ chính xác cao, sử dụng YOLO và EasyOCR</p>
+                    <a href="/license-plate" class="btn">Truy cập →</a>
+                </div>
+                
+                <div class="module-card" onclick="location.href='/dicom'">
+                    <div class="module-icon">🏥</div>
+                    <h2>Xử Lý Ảnh DICOM</h2>
+                    <p>Xử lý và phân tích ảnh y tế DICOM với windowing/leveling chuyên nghiệp</p>
+                    <a href="/dicom" class="btn">Truy cập →</a>
+                </div>
+            </div>
+            
+            <div class="features">
+                <h3>✨ Tính Năng Nổi Bật</h3>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span>🎯</span>
+                        <p><strong>Độ chính xác cao</strong><br>95%+ với YOLO AI</p>
+                    </div>
+                    <div class="feature-item">
+                        <span>⚡</span>
+                        <p><strong>Xử lý nhanh</strong><br>< 2 giây/ảnh</p>
+                    </div>
+                    <div class="feature-item">
+                        <span>🔒</span>
+                        <p><strong>Bảo mật</strong><br>Dữ liệu được mã hóa</p>
+                    </div>
+                    <div class="feature-item">
+                        <span>🌐</span>
+                        <p><strong>Web-based</strong><br>Truy cập mọi lúc</p>
+                    </div>
+                    <div class="feature-item">
+                        <span>📊</span>
+                        <p><strong>DICOM Support</strong><br>Chuẩn y tế quốc tế</p>
+                    </div>
+                    <div class="feature-item">
+                        <span>🎨</span>
+                        <p><strong>Windowing</strong><br>Điều chỉnh linh hoạt</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    text-align: center;
+    position: relative;
+}
+
+.header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.back-btn {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50px;
+    transition: all 0.3s;
+}
+
+.back-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.content {
+    padding: 60px 40px;
+}
+
+.upload-section {
+    text-align: center;
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.upload-section h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+input[type="file"] {
+    display: block;
+    margin: 20px auto;
+    padding: 15px;
+    border: 2px dashed #667eea;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+}
+
+.btn-primary {
+    padding: 15px 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.result-section {
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.result-section h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+#resultContent, #dicomContent {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.result-image {
+    max-width: 100%;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.result-info {
+    padding: 20px;
+    background: #e8f4f8;
+    border-left: 4px solid #667eea;
+    margin: 20px 0;
+}
+
+.result-info h3 {
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.result-info p {
+    margin: 5px 0;
+    color: #666;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.loading::after {
+    content: '⏳ Đang xử lý...';
+    font-size: 1.2em;
+    color: #667eea;
+}
+
+.error {
+    background: #fee;
+    border-left: 4px solid #f44;
+    padding: 20px;
+    border-radius: 5px;
+    color: #c33;
+}
+
+.success {
+    background: #efe;
+    border-left: 4px solid #4c4;
+    padding: 20px;
+    border-radius: 5px;
+    color: #363;
+}

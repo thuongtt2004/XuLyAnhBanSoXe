@@ -1,0 +1,34 @@
+@startuml Xử Lý DICOM (Đơn giản)
+
+actor "Người dùng" as User
+participant "Trình duyệt" as Browser
+participant "Flask" as Flask
+participant "DICOM\nProcessor" as DICOM
+
+User -> Browser: Tải file .dcm
+Browser -> Flask: POST /api/process-dicom
+
+Flask -> Flask: Kiểm tra file
+Flask -> DICOM: Xử lý DICOM
+
+DICOM -> DICOM: Đọc file (pydicom)
+DICOM -> DICOM: Trích xuất metadata
+DICOM -> DICOM: Trích xuất pixel data
+DICOM -> DICOM: Áp dụng windowing
+DICOM -> DICOM: Chuyển sang 8-bit
+DICOM -> DICOM: Mã hóa base64
+
+DICOM --> Flask: Ảnh + metadata
+Flask --> Browser: JSON
+Browser --> User: Hiển thị ảnh
+
+== Điều chỉnh Window ==
+
+User -> Browser: Kéo thanh trượt
+Browser -> Flask: POST /api/adjust-window
+Flask -> DICOM: Tính lại windowing
+DICOM --> Flask: Ảnh mới
+Flask --> Browser: JSON
+Browser --> User: Cập nhật hiển thị
+
+@enduml

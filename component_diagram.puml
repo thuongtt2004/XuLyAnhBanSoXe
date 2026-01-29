@@ -1,0 +1,158 @@
+@startuml Component Diagram
+
+!define RECTANGLE class
+
+skinparam component {
+    BackgroundColor<<frontend>> LightBlue
+    BackgroundColor<<backend>> LightGreen
+    BackgroundColor<<library>> LightYellow
+    BackgroundColor<<external>> LightCoral
+    BorderColor Black
+}
+
+package "Frontend (Browser)" <<frontend>> {
+    [Web UI] as UI
+    [HTML Templates] as HTML
+    [CSS Styles] as CSS
+    [JavaScript] as JS
+}
+
+package "Backend (Flask Server)" <<backend>> {
+    [Flask Application] as Flask
+    [Route Handlers] as Routes
+    [API Endpoints] as API
+    [File Manager] as FileManager
+}
+
+package "Business Logic" <<backend>> {
+    component "License Plate Module" {
+        [YOLO Detector] as YOLO
+        [OCR Engine] as OCR
+        [Preprocessor] as Preproc
+        [Validator] as Validator
+    }
+    
+    component "DICOM Module" {
+        [DICOM Reader] as DICOMReader
+        [Windowing] as Window
+        [Enhancement] as Enhance
+    }
+}
+
+package "Core Libraries" <<library>> {
+    [config.py] as Config
+    [utils.py] as Utils
+    [OpenCV] as OpenCV
+    [EasyOCR] as EasyOCR
+    [NumPy] as NumPy
+    [Pillow] as Pillow
+}
+
+package "External Libraries" <<external>> {
+    [Ultralytics YOLO] as YOLOLib
+    [pydicom] as pydicomLib
+    [PyTorch] as PyTorch
+}
+
+database "File System" {
+    folder "uploads/" as Uploads
+    folder "runs/" as Runs
+    folder "dicom_samples/" as Samples
+}
+
+' Frontend connections
+UI --> HTML
+UI --> CSS
+UI --> JS
+
+' Frontend to Backend
+UI --> Flask : HTTP/HTTPS
+
+' Backend internal
+Flask --> Routes
+Flask --> API
+Flask --> FileManager
+
+' Backend to Business Logic
+API --> YOLO : detect plate
+API --> DICOMReader : process DICOM
+
+' Business Logic internal - License Plate
+YOLO --> Preproc
+Preproc --> OCR
+OCR --> Validator
+
+' Business Logic internal - DICOM
+DICOMReader --> Window
+Window --> Enhance
+
+' Business Logic to Core Libraries
+YOLO --> Config
+YOLO --> OpenCV
+YOLO --> Utils
+
+OCR --> EasyOCR
+OCR --> Config
+OCR --> Utils
+
+Preproc --> OpenCV
+Preproc --> NumPy
+Preproc --> Config
+
+Validator --> Utils
+Validator --> Config
+
+DICOMReader --> pydicomLib
+DICOMReader --> NumPy
+DICOMReader --> Pillow
+
+Window --> NumPy
+Enhance --> OpenCV
+
+' Core to External
+YOLO --> YOLOLib
+EasyOCR --> PyTorch
+
+' File System connections
+FileManager --> Uploads : read/write
+YOLO --> Runs : load model
+DICOMReader --> Samples : read samples
+
+note right of UI
+  User Interface
+  - Upload files
+  - Display results
+  - Adjust settings
+end note
+
+note right of API
+  REST API
+  - /api/detect-plate
+  - /api/process-dicom
+  - /api/adjust-window
+end note
+
+note right of YOLO
+  Detection Pipeline
+  1. YOLO detection
+  2. OpenCV fallback
+  3. ROI extraction
+end note
+
+note right of OCR
+  Recognition Pipeline
+  1. Preprocessing (20 variants)
+  2. EasyOCR recognition
+  3. Vote best result
+  4. Validation
+end note
+
+note right of DICOMReader
+  DICOM Pipeline
+  1. Read DICOM file
+  2. Extract metadata
+  3. Apply windowing
+  4. Enhancement
+end note
+
+@enduml

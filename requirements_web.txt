@@ -1,0 +1,16 @@
+# Web Application Requirements
+Flask==2.3.0
+Werkzeug==2.3.0
+
+# Existing requirements
+opencv-python==4.8.0.74
+numpy==1.24.3
+easyocr==1.7.0
+ultralytics==8.0.134
+Pillow==10.0.0
+
+# DICOM support (optional)
+pydicom==2.4.3
+
+# Additional utilities
+python-multipart==0.0.6

@@ -1,0 +1,208 @@
+@startuml Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor<<config>> LightYellow
+    BackgroundColor<<detector>> LightBlue
+    BackgroundColor<<processor>> LightGreen
+    BackgroundColor<<utils>> LightCoral
+    BorderColor Black
+}
+
+package "Configuration Classes" <<config>> {
+    class DetectionConfig {
+        + YOLO_MODEL_PATH: str
+        + YOLO_CONF_THRESHOLD: float = 0.05
+        + YOLO_PADDING: float = 0.2
+        + YOLO_MIN_WIDTH: int = 50
+        + YOLO_MIN_HEIGHT: int = 20
+        + YOLO_ASPECT_RATIO_MIN: float = 1.5
+        + YOLO_ASPECT_RATIO_MAX: float = 7.0
+    }
+    
+    class OCRConfig {
+        + LANGUAGES: list = ['en', 'vi']
+        + USE_GPU: bool = False
+        + OCR_CONF_THRESHOLD: float = 0.10
+        + TEXT_THRESHOLD: float = 0.15
+        + CANVAS_SIZE: int = 5000
+        + MAG_RATIO: float = 3.0
+        + ALLOWLIST: str = '0-9A-Z-.'
+        + LOW_TEXT: float = 0.03
+        + LINK_THRESHOLD: float = 0.03
+    }
+    
+    class PreprocessingConfig {
+        + MAX_VARIANTS: int = 20
+        + USE_SMART_SELECTION: bool = True
+        + CLAHE_CLIP_LIMIT: float = 6.0
+        + CLAHE_TILE_SIZE: tuple = (8, 8)
+        + SHARPEN_KERNEL_CENTER: int = 20
+        + RESIZE_WIDTHS: list = [300,400,500,600,800]
+        + MIN_RESIZE_WIDTH: int = 400
+        + GAMMA_BRIGHT: float = 1.5
+        + GAMMA_DARK: float = 0.7
+    }
+    
+    class ValidationConfig {
+        + MIN_LENGTH_CLEAN: int = 7
+        + MAX_LENGTH_CLEAN: int = 10
+        + MIN_LENGTH_RAW: int = 6
+        + MAX_LENGTH_RAW: int = 15
+        + MIN_LETTERS: int = 1
+        + MAX_LETTERS: int = 3
+        + MIN_DIGITS: int = 6
+        + MAX_DIGITS: int = 8
+        + MIN_PROVINCE_CODE: int = 1
+        + MAX_PROVINCE_CODE: int = 99
+    }
+    
+    class ConfidenceConfig {
+        + WEIGHT_YOLO: float = 0.20
+        + WEIGHT_BEST_OCR: float = 0.40
+        + WEIGHT_MEDIAN_OCR: float = 0.15
+        + WEIGHT_AVG_OCR: float = 0.10
+        + VOTE_RATIO_EXCELLENT: float = 0.6
+        + VOTE_RATIO_GOOD: float = 0.4
+        + VOTE_BONUS_EXCELLENT: float = 0.15
+        + CONSISTENCY_BONUS_EXCELLENT: float = 0.05
+        + EARLY_STOP_CONFIDENCE: float = 0.95
+    }
+}
+
+package "Detection & Recognition" <<detector>> {
+    class LicensePlateDetector {
+        - reader: EasyOCR.Reader
+        - allowlist: str
+        --
+        + __init__(languages, gpu)
+        + read_text(image): list
+        + extract_license_number(ocr_results): str
+        + fix_common_ocr_errors(text): str
+        + smart_digit_correction(text, ocr_results): str
+        + vote_best_result(results): tuple
+        + detect_plate(images): tuple
+        + draw_results(image, ocr_results): ndarray
+    }
+    
+    class YOLOPlateDetector {
+        - model: YOLO
+        - available: bool
+        - conf_threshold: float
+        --
+        + __init__(model_path)
+        + detect_plates(image_path): list
+        + extract_plate_region(image, bbox): ndarray
+        + calculate_confidence(yolo_conf, ocr_conf, ...): float
+        + integrate_yolo_detection(image_path, ocr): tuple
+    }
+    
+    class ImagePreprocessor {
+        - debug: bool
+        --
+        + enhance_plate(image): ndarray
+        + deskew_image(image): ndarray
+        + reduce_glare(image): ndarray
+        + sharpen_image(image, strength): ndarray
+        + preprocess_for_ocr(image): tuple
+        + create_variants(plate_image): list
+    }
+}
+
+package "DICOM Processing" <<processor>> {
+    class DicomProcessor {
+        - dicom_available: bool
+        --
+        + process_dicom(filepath): dict
+        + apply_windowing(pixel_array, center, width): ndarray
+        + adjust_window(image_data, center, width): dict
+        + enhance_image(image, method): ndarray
+        + encode_image(image): str
+        + extract_metadata(dicom_file): dict
+    }
+}
+
+package "Utility Functions" <<utils>> {
+    class Utils {
+        {static} + validate_vietnamese_plate(text): bool
+        {static} + format_vietnamese_plate(text): str
+        {static} + clean_text(text): str
+        {static} + has_valid_components(text): bool
+        {static} + clamp(value, min_val, max_val): float
+        {static} + calculate_confidence(...): float
+        {static} + encode_image_to_base64(image): str
+        {static} + allowed_file(filename): bool
+    }
+}
+
+package "Web Application" {
+    class FlaskApp {
+        + app: Flask
+        + ocr_detector: LicensePlateDetector
+        --
+        + index(): str
+        + license_plate_page(): str
+        + dicom_page(): str
+        + detect_plate(): JSON
+        + process_dicom(): JSON
+        + adjust_window(): JSON
+        --
+        {static} + allowed_file(filename): bool
+        {static} + encode_image_to_base64(image): str
+    }
+}
+
+' Relationships
+LicensePlateDetector ..> OCRConfig : uses
+LicensePlateDetector ..> ValidationConfig : uses
+LicensePlateDetector ..> ConfidenceConfig : uses
+LicensePlateDetector ..> Utils : uses
+
+YOLOPlateDetector ..> DetectionConfig : uses
+YOLOPlateDetector ..> ConfidenceConfig : uses
+YOLOPlateDetector --> LicensePlateDetector : uses
+
+ImagePreprocessor ..> PreprocessingConfig : uses
+
+DicomProcessor ..> Utils : uses
+
+FlaskApp --> LicensePlateDetector : creates
+FlaskApp --> YOLOPlateDetector : uses
+FlaskApp --> ImagePreprocessor : uses
+FlaskApp --> DicomProcessor : uses
+FlaskApp ..> Utils : uses
+
+LicensePlateDetector --> ImagePreprocessor : uses
+
+note right of LicensePlateDetector
+  Main OCR detector
+  - EasyOCR integration
+  - Vote-based result selection
+  - Smart error correction
+  - Confidence calculation
+end note
+
+note right of YOLOPlateDetector
+  YOLO-based detection
+  - Plate localization
+  - ROI extraction
+  - Confidence scoring
+end note
+
+note right of ImagePreprocessor
+  Image preprocessing
+  - 20 variants generation
+  - CLAHE, sharpen, resize
+  - Gamma correction
+  - Denoising
+end note
+
+note right of DicomProcessor
+  DICOM image handling
+  - pydicom integration
+  - Windowing/Leveling
+  - Metadata extraction
+  - Enhancement
+end note
+
+@enduml
