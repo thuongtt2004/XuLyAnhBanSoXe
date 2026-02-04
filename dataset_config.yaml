@@ -1,9 +1,0 @@
-
-# License Plate Detection Dataset
-path: d:/game/archive  # Dataset root directory
-train: images/train  # Train images
-val: images/val      # Validation images
-
-# Classes
-nc: 2  # Number of classes
-names: ['BSD', 'BSV']  # Class names (Biển Số Dài, Biển Số Vuông)
